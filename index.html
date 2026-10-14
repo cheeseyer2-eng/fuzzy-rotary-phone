@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simplest Chat</title>
+    <!-- ScaleDrone Library -->
+    <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
+    <style>
+        body { font-family: monospace; max-width: 500px; margin: 20px auto; padding: 10px; background-color: #f9f9f9; }
+        #box { height: 300px; border: 1px solid #000; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: white; }
+        #msg { width: 75%; padding: 5px; }
+        button { padding: 5px 10px; }
+        .system-msg { color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <h3>Text Chat Room</h3>
+    <div id="box">
+        <div class="system-msg">> Connecting to room...</div>
+    </div>
+    <input type="text" id="msg" placeholder="Type message and press Enter..." onkeydown="if(event.key==='Enter') send()">
+    <button onclick="send()">Send</button>
+
+    <script>
+        // Updated active public channel ID 
+        const drone = new ScaleDrone('yjN46UoWpE8pL9fK'); 
+        const roomName = 'observable-room';
+        let room;
+
+        // When successfully connected to the network
+        drone.on('open', error => {
+            if (error) {
+                document.getElementById('box').innerHTML += '<div style="color:red">> Connection Error!</div>';
+                return console.error(error);
+            }
+            
+            // Subscribe to the chat room
+            room = drone.subscribe(roomName);
+            
+            room.on('open', error => {
+                if (error) return console.error(error);
+                document.getElementById('box').innerHTML += '<div class="system-msg">> Connected! Ready to chat.</div>';
+            });
+
+            // FIXED: Changed event listener from 'data' to 'message'
+            room.on('message', message => {
+                const box = document.getElementById('box');
+                // message.data contains the text string sent
+                box.innerHTML += '<div>&gt; ' + message.data + '</div>';
+                box.scrollTop = box.scrollHeight; // Auto-scrolls to the newest message
+            });
+        });
+
+        function send() {
+            const input = document.getElementById('msg');
+            if (input.value.trim() !== '' && room) {
+                drone.publish({
+                    room: roomName,
+                    message: input.value
+                });
+                input.value = '';
+            }
+        }
+    </script>
+
+</body>
+</html>
